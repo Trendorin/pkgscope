@@ -1,0 +1,31 @@
+# Maintainer: Trendorin <193045225+Trendorin@users.noreply.github.com>
+#
+# Builds the source tree this file lives in:  cd packaging/arch && makepkg -si
+pkgname=pkgscope
+pkgver=1.0.0
+pkgrel=1
+pkgdesc='Inspect Linux packages, AppImages and binaries, and trace installers in a no-root sandbox'
+arch=('x86_64')
+url='https://github.com/Trendorin/pkgscope'
+license=('MIT')
+depends=('qt6-base' 'libarchive' 'strace' 'squashfs-tools' 'gcc-libs' 'glibc' 'hicolor-icon-theme')
+makedepends=('cmake' 'ninja')
+install=pkgscope.install
+options=('!debug')
+
+build() {
+  cmake -B build -S "$startdir/../.." -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DPKGSCOPE_BUILD_TESTS=ON
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

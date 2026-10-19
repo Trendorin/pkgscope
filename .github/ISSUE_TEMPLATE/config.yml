@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/Trendorin/pkgscope#readme
+    about: Installation, usage, the sandbox and the command line
+  - name: Report a security vulnerability
+    url: https://github.com/Trendorin/pkgscope/security/advisories/new
+    about: Please report security problems privately

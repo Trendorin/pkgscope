@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=PkgScope
+GenericName=Package Inspector
+Comment=Inspect packages, AppImages and binaries, and trace them in a sandbox
+Exec=pkgscope %f
+TryExec=pkgscope
+Icon=io.github.trendorin.PkgScope
+Terminal=false
+Categories=System;Security;Utility;
+Keywords=package;deb;rpm;appimage;sandbox;malware;elf;security;analysis;
+MimeType=application/vnd.debian.binary-package;application/x-rpm;application/x-redhat-package-manager;application/vnd.appimage;application/x-iso9660-appimage;application/x-xz-compressed-tar;application/zstd;application/x-tar;application/vnd.snap;application/x-archive;
+StartupNotify=true
+StartupWMClass=pkgscope

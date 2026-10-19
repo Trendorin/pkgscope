@@ -1,0 +1,19 @@
+# AppArmor profile that lets pkgscope-sandbox create unprivileged user
+# namespaces on distributions that restrict them by default (Ubuntu 24.04+).
+#
+# Install:
+#   sudo install -Dm644 packaging/apparmor/pkgscope-sandbox \
+#        /etc/apparmor.d/pkgscope-sandbox
+#   # adjust the path below if you installed somewhere other than /usr/local
+#   sudo apparmor_parser -r /etc/apparmor.d/pkgscope-sandbox
+#
+# This grants ONLY the ability to set up user namespaces; the real confinement
+# of analysed programs is done by pkgscope-sandbox itself (namespaces, overlay,
+# dropped capabilities and seccomp).
+abi <abi/4.0>,
+include <tunables/global>
+
+profile pkgscope-sandbox /usr/{local/,}{lib,libexec}/pkgscope/pkgscope-sandbox flags=(unconfined) {
+  userns,
+  include if exists <local/pkgscope-sandbox>
+}

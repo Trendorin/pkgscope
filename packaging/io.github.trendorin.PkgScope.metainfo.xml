@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.trendorin.PkgScope</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>PkgScope</name>
+  <summary>Inspect packages and binaries, and trace them in a sandbox</summary>
+  <description>
+    <p>
+      PkgScope unpacks and inspects Linux packages (deb, rpm, pacman, apk, xbps,
+      Slackware, ipk), AppImages, Snaps, ELF binaries and install scripts without
+      installing them. It builds a tree of what an installer would put where, flags
+      suspicious maintainer scripts, setuid files, rootkit-style libraries and
+      embedded network indicators, and verifies files against the package's own
+      checksums.
+    </p>
+    <p>
+      It can also run the file inside an isolated, no-root sandbox (user, mount, PID
+      and network namespaces with a copy-on-write overlay and a seccomp filter) and
+      record exactly what it does: the process tree, every file it creates or
+      modifies, and every host it tries to contact. The sandbox never touches your
+      real system, and everything is cleaned up afterwards.
+    </p>
+    <p>
+      Reports export to HTML, JSON and Markdown. A command-line front-end
+      (pkgscope-cli) is available for scripting and CI.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.trendorin.PkgScope.desktop</launchable>
+  <categories>
+    <category>System</category>
+    <category>Security</category>
+  </categories>
+  <provides>
+    <binary>pkgscope</binary>
+    <binary>pkgscope-cli</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-10-19"/>
+  </releases>
+</component>
