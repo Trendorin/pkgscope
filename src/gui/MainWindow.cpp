@@ -318,7 +318,8 @@ QWidget *MainWindow::buildFindingsTab()
     v->addWidget(split);
 
     const auto showSel = [this, detail] {
-        auto *it = m_findings->currentItem();
+        const QList<QTreeWidgetItem *> sel = m_findings->selectedItems();
+        auto *it = sel.isEmpty() ? m_findings->currentItem() : sel.constFirst();
         if (!it) return;
         const int line = it->data(0, Qt::UserRole + 1).toInt();
         const QString loc = it->data(0, Qt::UserRole + 2).toString();
@@ -697,10 +698,28 @@ void MainWindow::closeEvent(QCloseEvent *e)
 // ------------------------------------------------------------------ populate
 
 namespace {
+// Rows sort by a numeric key in Qt::UserRole when a column has one (severity
+// rank, sizes), otherwise by their text.
+class SortItem : public QTreeWidgetItem
+{
+public:
+    using QTreeWidgetItem::QTreeWidgetItem;
+    bool operator<(const QTreeWidgetItem &other) const override
+    {
+        const int c = treeWidget() ? treeWidget()->sortColumn() : 0;
+        const QVariant a = data(c, Qt::UserRole), b = other.data(c, Qt::UserRole);
+        const auto numeric = [](const QVariant &v) {
+            const int id = v.metaType().id();
+            return id == QMetaType::Int || id == QMetaType::LongLong || id == QMetaType::ULongLong || id == QMetaType::Double;
+        };
+        if (numeric(a) && numeric(b)) return a.toDouble() < b.toDouble();
+        return QTreeWidgetItem::operator<(other);
+    }
+};
+
 QTreeWidgetItem *addRow(QTreeWidget *t, const QStringList &cols)
 {
-    auto *it = new QTreeWidgetItem(t, cols);
-    return it;
+    return new SortItem(t, cols);
 }
 } // namespace
 

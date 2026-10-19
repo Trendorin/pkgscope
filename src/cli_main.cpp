@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // pkgscope-cli — headless front-end (CI pipelines, servers, scripting).
+#include <unistd.h>
 #include "core/DynamicTracer.h"
 #include "core/ReportWriter.h"
 #include "core/StaticAnalyzer.h"
@@ -56,8 +57,10 @@ int main(int argc, char **argv)
     AnalysisResult r;
     std::shared_ptr<Workspace> ws;
     const bool q = p.isSet(quiet);
+    // The progress line rewrites itself with \r: only on a terminal, never into logs.
+    const bool live = !q && ::isatty(STDERR_FILENO);
     const auto progress = [&](int pct, const QString &m) {
-        if (!q) { err << QStringLiteral("\r[%1%] %2").arg(pct, 3).arg(util::elide(m, 70)).leftJustified(82) ; err.flush(); }
+        if (live) { err << QStringLiteral("\r[%1%] %2").arg(pct, 3).arg(util::elide(m, 70)).leftJustified(82) ; err.flush(); }
     };
     if (!analyzer.analyze(p.positionalArguments().first(), r, ws, progress, &g_cancel)) {
         err << "\nAnalysis failed: " << r.log.join(QLatin1Char('\n')) << '\n';
@@ -69,7 +72,7 @@ int main(int argc, char **argv)
             err << "\nBehaviour trace incomplete: " << r.behavior.sandboxNotes << '\n';
         if (s.keepRunDir) ws->setKeep(true);
     }
-    if (!q) err << "\r" << QString(82, QLatin1Char(' ')) << "\r";
+    if (live) err << "\r" << QString(82, QLatin1Char(' ')) << "\r";
 
     if (!q) {
         out << r.fileName << " — " << r.formatName << "\n";

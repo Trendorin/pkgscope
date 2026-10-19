@@ -162,9 +162,10 @@ jobs:
 
       - name: Run
         run: |
+          sudo apt-get install -yq xvfb
           img=$(ls dist/*.AppImage)
           "$img" --appimage-extract-and-run --cli --version
-          QT_QPA_PLATFORM=offscreen "$img" --appimage-extract-and-run --version
+          xvfb-run -a "$img" --appimage-extract-and-run --version
 
       - uses: actions/upload-artifact@v4
         with:

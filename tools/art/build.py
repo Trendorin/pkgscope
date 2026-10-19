@@ -93,7 +93,7 @@ TEXT = {
             ("security", "sandbox", "SECURITY", "threat model, reporting"),
             ("changelog", "layers", "CHANGELOG", "what changed and when"),
         ],
-        "frames": {"overview": "PKGSCOPE · OVERVIEW", "behaviour": "PKGSCOPE · BEHAVIOUR", "scripts": "PKGSCOPE · SCRIPTS"},
+        "frames": {"overview": "PKGSCOPE · OVERVIEW", "findings": "PKGSCOPE · FINDINGS", "scripts": "PKGSCOPE · SCRIPTS"},
     },
     "ru": {
         "tagline": "Загляните в пакет до установки",

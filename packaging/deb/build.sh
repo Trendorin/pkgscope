@@ -28,7 +28,7 @@ install -Dm644 packaging/apparmor/pkgscope-sandbox "$PKG/etc/apparmor.d/pkgscope
 
 # Shared-library dependencies, the way dh_shlibdeps finds them.
 mkdir -p "$STAGE/debian"
-printf 'Source: pkgscope\n\nPackage: pkgscope\n' > "$STAGE/debian/control"
+printf 'Source: pkgscope\n\nPackage: pkgscope\nArchitecture: any\n' > "$STAGE/debian/control"
 SHLIBS=$(cd "$STAGE" && dpkg-shlibdeps -O -e pkgscope/usr/bin/pkgscope -e pkgscope/usr/bin/pkgscope-cli \
     -e pkgscope/usr/libexec/pkgscope/pkgscope-sandbox | sed -n 's/^shlibs:Depends=//p')
 
