@@ -42,7 +42,7 @@ jobs:
           v=${{ steps.version.outputs.version }}
           git archive --format=tar.gz --prefix="pkgscope-$v/" -o "dist/pkgscope-$v.tar.gz" HEAD
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: source
           path: dist/*
@@ -75,7 +75,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/lib/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: arch
           path: dist/*.pkg.tar.zst
@@ -105,7 +105,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/libexec/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: debian
           path: dist/*.deb
@@ -142,7 +142,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/libexec/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: fedora
           path: dist/*.rpm
@@ -167,7 +167,7 @@ jobs:
           "$img" --appimage-extract-and-run --cli --version
           xvfb-run -a "$img" --appimage-extract-and-run --version
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: appimage
           path: dist/*.AppImage
@@ -195,7 +195,7 @@ jobs:
       - name: Release notes
         run: .github/release-notes.sh "${{ needs.source.outputs.version }}" > notes.md
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.ref_type != 'tag'
         with:
           name: release
