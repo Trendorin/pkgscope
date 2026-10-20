@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(PkgScope VERSION 1.0.1 DESCRIPTION "Package & binary inspector with sandboxed behaviour tracing" LANGUAGES CXX)
+project(PkgScope VERSION 1.1.0 DESCRIPTION "Package & binary inspector with sandboxed behaviour tracing" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -88,6 +88,7 @@ qt_add_executable(pkgscope
   src/gui/SettingsDialog.cpp src/gui/SettingsDialog.h
   src/gui/Widgets.cpp src/gui/Widgets.h
   src/gui/Theme.cpp src/gui/Theme.h
+  src/gui/I18n.cpp src/gui/I18n.h
   resources/pkgscope.qrc
 )
 target_link_libraries(pkgscope PRIVATE pkgscope_core Qt6::Gui Qt6::Widgets)

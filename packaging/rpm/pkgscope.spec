@@ -1,5 +1,5 @@
 Name:           pkgscope
-Version:        1.0.1
+Version:        1.1.0
 Release:        1%{?dist}
 Summary:        Inspect Linux packages before installing them
 License:        MIT
@@ -52,6 +52,9 @@ modprobe overlay >/dev/null 2>&1 || :
 %{_datadir}/icons/hicolor/scalable/apps/io.github.trendorin.PkgScope.svg
 
 %changelog
+* Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.1.0-1
+- Language setting (English, Russian), Russian window, script filter in Open
+
 * Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.0.1-1
 - Security and correctness fixes, see CHANGELOG.md
 

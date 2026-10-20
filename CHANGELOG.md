@@ -5,6 +5,19 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-10-20
+
+### Added
+- **Language** (Settings → Appearance → Language): follow the system, English or Russian; applies at the
+  next start (`PKGSCOPE_LANG=ru` for one run). Menus, tabs, tables, settings and messages are
+  translated. The texts of the analysis rules (finding titles and explanations) stay English.
+
+### Fixed
+- The **Open** dialog could not select scripts: its filter listed only packages. It now has Packages,
+  AppImages, Scripts and installers (`.sh`, `.bash`, `.py`, `.run`, …), Libraries and kernel modules,
+  and All files.
+
+
 ## [1.0.1] — 2026-10-20
 
 Security and correctness fixes after an independent review.
@@ -71,6 +84,7 @@ First release.
   setuid bits, device nodes, size limits) and a libFuzzer harness for every parser, run under
   AddressSanitizer and UndefinedBehaviorSanitizer in CI.
 
-[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Trendorin/pkgscope/releases/tag/v1.1.0
 [1.0.1]: https://github.com/Trendorin/pkgscope/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Trendorin/pkgscope/releases/tag/v1.0.0

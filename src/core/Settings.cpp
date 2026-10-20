@@ -26,6 +26,7 @@ Settings Settings::load()
     d.straceOverride = s.value(QStringLiteral("dynamic/strace")).toString();
     d.unsquashfsOverride = s.value(QStringLiteral("static/unsquashfs")).toString();
     d.theme = s.value(QStringLiteral("ui/theme"), d.theme).toString();
+    d.language = s.value(QStringLiteral("ui/language"), d.language).toString();
     d.lastExportDir = s.value(QStringLiteral("ui/lastExportDir")).toString();
     d.defaultExportFormat = s.value(QStringLiteral("ui/exportFormat"), d.defaultExportFormat).toString();
     return d;
@@ -49,6 +50,7 @@ void Settings::save() const
     s.setValue(QStringLiteral("dynamic/extraArgs"), extraArgs);
     s.setValue(QStringLiteral("dynamic/strace"), straceOverride);
     s.setValue(QStringLiteral("ui/theme"), theme);
+    s.setValue(QStringLiteral("ui/language"), language);
     s.setValue(QStringLiteral("ui/lastExportDir"), lastExportDir);
     s.setValue(QStringLiteral("ui/exportFormat"), defaultExportFormat);
 }

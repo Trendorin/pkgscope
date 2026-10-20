@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "core/Settings.h"
 #include "core/Workspace.h"
+#include "gui/I18n.h"
 #include "gui/MainWindow.h"
 #include "gui/Theme.h"
 
@@ -25,6 +26,7 @@ int main(int argc, char **argv)
     parser.process(app);
 
     const ps::Settings s = ps::Settings::load();
+    ps::i18n::install(app, s.language);
     ps::theme::apply(app, s.theme);
     app.setWindowIcon(ps::theme::appIcon());
     ps::Workspace::cleanupStale();

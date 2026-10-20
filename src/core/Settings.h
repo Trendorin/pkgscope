@@ -27,6 +27,7 @@ struct Settings {
 
     // Reports / UI
     QString theme = QStringLiteral("system"); // system | light | dark
+    QString language = QStringLiteral("auto"); // auto | en | ru (applies at the next start)
     QString lastExportDir;
     QString defaultExportFormat = QStringLiteral("html");
 

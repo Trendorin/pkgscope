@@ -501,7 +501,12 @@ void MainWindow::browse()
 {
     const QString start = m_settings.lastExportDir.isEmpty() ? QDir::homePath() : m_settings.lastExportDir;
     const QString f = QFileDialog::getOpenFileName(this, tr("Open package or binary"), start,
-        tr("All supported (*.deb *.rpm *.pkg.tar.* *.apk *.AppImage *.appimage *.snap *.ipk *.xbps *.tgz *.txz *.tar.* *.run);;All files (*)"));
+        tr("All supported (*.deb *.rpm *.pkg.tar.* *.apk *.AppImage *.appimage *.snap *.ipk *.xbps *.tgz *.txz *.tar.* *.run "
+           "*.sh *.bash *.zsh *.py *.pl *.rb *.so *.ko *.bin *.install);;"
+           "Packages (*.deb *.rpm *.pkg.tar.* *.apk *.snap *.ipk *.xbps *.tgz *.txz *.tar.*);;"
+           "AppImages (*.AppImage *.appimage);;"
+           "Scripts and installers (*.sh *.bash *.zsh *.py *.pl *.rb *.run *.bin *.install);;"
+           "Libraries and kernel modules (*.so *.so.* *.ko);;All files (*)"));
     if (!f.isEmpty()) openPath(f);
 }
 
@@ -650,10 +655,12 @@ void MainWindow::openSettings()
 {
     SettingsDialog dlg(m_settings, this);
     if (dlg.exec() == QDialog::Accepted) {
+        const QString oldLanguage = m_settings.language;
         m_settings = dlg.settings();
         m_settings.save();
         theme::apply(*qApp, m_settings.theme);
-        statusBar()->showMessage(tr("Settings saved."), 4000);
+        statusBar()->showMessage(m_settings.language != oldLanguage ? tr("Restart PkgScope to apply the language.")
+                                                                    : tr("Settings saved."), 6000);
     }
 }
 
@@ -749,15 +756,17 @@ void MainWindow::populate()
     m_ovCounts->setText(cnt);
 
     m_ovInfo->setText(QStringLiteral("<table cellspacing=4>"
-        "<tr><td><b>Format</b></td><td>%1</td></tr>"
-        "<tr><td><b>Size</b></td><td>%2 (%3 bytes)</td></tr>"
-        "<tr><td><b>SHA-256</b></td><td><code>%4</code></td></tr>"
-        "<tr><td><b>SHA-1</b></td><td><code>%5</code></td></tr>"
-        "<tr><td><b>Entries</b></td><td>%6 files · %7 binaries · %8 scripts</td></tr>"
-        "<tr><td><b>Analysed</b></td><td>%9 (%10 ms)</td></tr></table>")
-        .arg(r.formatName.toHtmlEscaped(), util::humanSize(r.fileSize)).arg(r.fileSize)
-        .arg(r.sha256, r.sha1).arg(r.files.size()).arg(r.binaries.size()).arg(r.scripts.size())
-        .arg(r.analyzedAt.toString(Qt::ISODate)).arg(r.durationMs));
+        "<tr><td><b>%1</b></td><td>%2</td></tr>"
+        "<tr><td><b>%3</b></td><td>%4 (%5 %6)</td></tr>"
+        "<tr><td><b>SHA-256</b></td><td><code>%7</code></td></tr>"
+        "<tr><td><b>SHA-1</b></td><td><code>%8</code></td></tr>"
+        "<tr><td><b>%9</b></td><td>%10</td></tr>"
+        "<tr><td><b>%11</b></td><td>%12 (%13)</td></tr></table>")
+        .arg(tr("Format"), r.formatName.toHtmlEscaped(), tr("Size"), util::humanSize(r.fileSize))
+        .arg(r.fileSize).arg(tr("bytes"))
+        .arg(r.sha256, r.sha1, tr("Entries"),
+             tr("%1 files · %2 binaries · %3 scripts").arg(r.files.size()).arg(r.binaries.size()).arg(r.scripts.size()),
+             tr("Analysed"), r.analyzedAt.toString(Qt::ISODate), tr("%1 ms").arg(r.durationMs)));
 
     m_metaTree->clear();
     const auto meta = [&](const QString &k, const QString &v) {

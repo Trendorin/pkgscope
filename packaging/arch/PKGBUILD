@@ -2,7 +2,7 @@
 #
 # Builds the source tree this file lives in:  cd packaging/arch && makepkg -si
 pkgname=pkgscope
-pkgver=1.0.1
+pkgver=1.1.0
 pkgrel=1
 pkgdesc='Inspect Linux packages, AppImages and binaries, and trace installers in a no-root sandbox'
 arch=('x86_64')

@@ -87,6 +87,11 @@ SettingsDialog::SettingsDialog(const Settings &s, QWidget *parent) : QDialog(par
     m_theme->addItem(tr("Light"), QStringLiteral("light"));
     m_theme->addItem(tr("Dark"), QStringLiteral("dark"));
     uf->addRow(tr("Theme:"), m_theme);
+    m_language = new QComboBox;
+    m_language->addItem(tr("Follow system"), QStringLiteral("auto"));
+    m_language->addItem(QStringLiteral("English"), QStringLiteral("en"));
+    m_language->addItem(QStringLiteral("Русский"), QStringLiteral("ru"));
+    uf->addRow(tr("Language:"), m_language);
     m_exportFmt = new QComboBox;
     m_exportFmt->addItem(QStringLiteral("HTML"), QStringLiteral("html"));
     m_exportFmt->addItem(QStringLiteral("JSON"), QStringLiteral("json"));
@@ -122,6 +127,8 @@ void SettingsDialog::load()
     m_extraArgs->setText(m_s.extraArgs);
     for (int i = 0; i < m_theme->count(); ++i)
         if (m_theme->itemData(i).toString() == m_s.theme) m_theme->setCurrentIndex(i);
+    for (int i = 0; i < m_language->count(); ++i)
+        if (m_language->itemData(i).toString() == m_s.language) m_language->setCurrentIndex(i);
     for (int i = 0; i < m_exportFmt->count(); ++i)
         if (m_exportFmt->itemData(i).toString() == m_s.defaultExportFormat) m_exportFmt->setCurrentIndex(i);
 }
@@ -141,6 +148,7 @@ void SettingsDialog::store()
     m_s.keepRunDir = m_keepRun->isChecked();
     m_s.extraArgs = m_extraArgs->text();
     m_s.theme = m_theme->currentData().toString();
+    m_s.language = m_language->currentData().toString();
     m_s.defaultExportFormat = m_exportFmt->currentData().toString();
 }
 

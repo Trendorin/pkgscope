@@ -65,4 +65,5 @@ removed with your package manager.
 | what | where |
 |---|---|
 | settings | `~/.config/pkgscope/PkgScope.conf` (the window and `pkgscope-cli` share it) |
+| language | **Settings → Language** (English, Russian or follow the system; applies after a restart), or `PKGSCOPE_LANG=ru` for one run |
 | sandbox work directories | `~/.cache/pkgscope/work` (removed after each run unless you keep them) |

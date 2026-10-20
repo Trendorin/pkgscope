@@ -25,6 +25,7 @@ private:
 
     Settings m_s;
     QComboBox *m_theme;
+    QComboBox *m_language;
     QSpinBox *m_maxExtract, *m_maxDeep, *m_timeout, *m_grace, *m_maxFsize;
     QCheckBox *m_scanStrings, *m_verify, *m_showBenign, *m_allowNet, *m_allowDisplay, *m_keepRun;
     QLineEdit *m_extraArgs;
