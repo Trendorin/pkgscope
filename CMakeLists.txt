@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-project(PkgScope VERSION 1.1.0 DESCRIPTION "Package & binary inspector with sandboxed behaviour tracing" LANGUAGES CXX)
+project(PkgScope VERSION 1.1.1 DESCRIPTION "Package & binary inspector with sandboxed behaviour tracing" LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
