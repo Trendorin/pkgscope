@@ -55,5 +55,5 @@ modprobe overlay >/dev/null 2>&1 || :
 * Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.0.1-1
 - Security and correctness fixes, see CHANGELOG.md
 
-* Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.0.1-1
+* Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.0.0-1
 - First release
