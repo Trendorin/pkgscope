@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    steps:
+      - name: Dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends build-essential cmake ninja-build \
+            qt6-base-dev libarchive-dev appstream desktop-file-utils
+
+      - uses: actions/checkout@v4
+
+      - name: Build (warnings are errors)
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPKGSCOPE_WERROR=ON -DPKGSCOPE_BUILD_TESTS=ON
+          cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Desktop metadata
+        run: |
+          desktop-file-validate packaging/io.github.trendorin.PkgScope.desktop
+          appstreamcli validate --no-net packaging/io.github.trendorin.PkgScope.metainfo.xml
+
+      - name: Scripts parse
+        run: for f in install.sh packaging/*/build.sh .github/release-notes.sh; do bash -n "$f"; done
+
+  fuzz:
+    name: Fuzz the parsers (2 minutes)
+    runs-on: ubuntu-24.04
+    container: debian:trixie
+    steps:
+      - name: Dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends clang libclang-rt-dev cmake ninja-build qt6-base-dev libarchive-dev
+
+      - uses: actions/checkout@v4
+
+      - name: Build with libFuzzer, ASan and UBSan
+        run: |
+          CC=clang CXX=clang++ cmake -S . -B fuzz -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPKGSCOPE_FUZZ=ON -DPKGSCOPE_BUILD_GUI=OFF
+          cmake --build fuzz --target pkgscope-fuzz
+
+      - name: Run
+        run: |
+          mkdir corpus
+          cp /usr/bin/ls /usr/lib/x86_64-linux-gnu/libz.so.1 install.sh corpus/
+          ASAN_OPTIONS=detect_leaks=0 fuzz/pkgscope-fuzz -max_total_time=120 -max_len=65536 corpus

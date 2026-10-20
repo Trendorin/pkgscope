@@ -1,0 +1,8 @@
+post_install() {
+  # The sandbox needs overlayfs; /usr/lib/modules-load.d loads it from the next boot on.
+  modprobe overlay 2>/dev/null || true
+}
+
+post_upgrade() {
+  post_install
+}
