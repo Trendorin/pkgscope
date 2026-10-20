@@ -289,6 +289,7 @@ void StraceParser::parseLine(QByteArray line, Output &out)
             m_started = true;
             out.markerSeen = true;
             m_rootPid = pid;
+            m_preMarker.remove(pid); // the helper's own setup calls came before the marker, from this very pid
             const int idx = procIndex(pid, out, t);
             out.processes[idx].ppid = 0;
             out.processes[idx].cwd = m_initialCwd;

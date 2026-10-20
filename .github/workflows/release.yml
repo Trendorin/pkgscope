@@ -22,7 +22,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Version
         id: version
@@ -42,7 +42,7 @@ jobs:
           v=${{ steps.version.outputs.version }}
           git archive --format=tar.gz --prefix="pkgscope-$v/" -o "dist/pkgscope-$v.tar.gz" HEAD
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: source
           path: dist/*
@@ -56,7 +56,7 @@ jobs:
       - name: Build dependencies
         run: pacman -Syu --noconfirm --needed cmake ninja qt6-base libarchive strace squashfs-tools
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Build as an unprivileged user
         run: |
@@ -75,7 +75,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/lib/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: arch
           path: dist/*.pkg.tar.zst
@@ -92,7 +92,7 @@ jobs:
           apt-get install -y --no-install-recommends build-essential cmake ninja-build dpkg-dev \
             qt6-base-dev libarchive-dev
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Build
         run: packaging/deb/build.sh
@@ -105,7 +105,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/libexec/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: debian
           path: dist/*.deb
@@ -119,9 +119,9 @@ jobs:
       - name: Build dependencies
         run: dnf install -y --setopt=install_weak_deps=False rpm-build cmake ninja-build gcc-c++ qt6-qtbase-devel libarchive-devel
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: source
           path: dist
@@ -142,7 +142,7 @@ jobs:
           QT_QPA_PLATFORM=offscreen pkgscope --version
           test -x /usr/libexec/pkgscope/pkgscope-sandbox
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: fedora
           path: dist/*.rpm
@@ -152,7 +152,7 @@ jobs:
     needs: source
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Build dependencies and Qt
         run: packaging/appimage/build.sh --deps
@@ -167,7 +167,7 @@ jobs:
           "$img" --appimage-extract-and-run --cli --version
           xvfb-run -a "$img" --appimage-extract-and-run --version
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: appimage
           path: dist/*.AppImage
@@ -179,9 +179,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: dist
           merge-multiple: true
@@ -195,7 +195,7 @@ jobs:
       - name: Release notes
         run: .github/release-notes.sh "${{ needs.source.outputs.version }}" > notes.md
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: github.ref_type != 'tag'
         with:
           name: release

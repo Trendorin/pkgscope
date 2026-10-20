@@ -628,7 +628,10 @@ void setupRoot(const Options &o)
         status("proc=ok");
     const std::string sys = root + "/sys";
     mkdir(sys.c_str(), 0555);
-    if (!bindMount("/sys", sys, false)) status("sys=unavailable");
+    // Not recursive: a recursive bind would carry the host's submounts (cgroup2, bpf, debugfs) with
+    // their own, writable, flags; a write to a delegated cgroup's cgroup.kill would then reach
+    // processes outside the sandbox. Without them /sys/fs/cgroup is just an empty directory.
+    if (!bindMount("/sys", sys, false, false)) status("sys=unavailable");
     const std::string run = root + "/run";
     mkdir(run.c_str(), 0755);
     if (mount("tmpfs", run.c_str(), "tmpfs", MS_NOSUID | MS_NODEV, "mode=0755,size=64m") != 0) die("mount /run");

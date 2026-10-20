@@ -6,7 +6,7 @@
 
 See inside Linux packages before you install them.
 
-[![Release](https://img.shields.io/badge/release-v1.0.0-0b8f7a)](https://github.com/Trendorin/pkgscope/releases/latest)
+[![Release](https://img.shields.io/badge/release-v1.0.1-0b8f7a)](https://github.com/Trendorin/pkgscope/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-0b8f7a)](LICENSE)
 ![Qt](https://img.shields.io/badge/Qt-6-0b8f7a)
 ![Platform](https://img.shields.io/badge/platform-Linux-0b8f7a)
@@ -15,7 +15,7 @@ See inside Linux packages before you install them.
 
 </div>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-overview-dark.png"><img src=".github/assets/screenshot-overview-light.png" width="100%" alt="PkgScope with a suspicious demo package: risk 100 of 100, findings by severity, file and package details"></picture>
+<img src=".github/assets/screenshot-overview.png" width="100%" alt="PkgScope with a suspicious demo package: risk 100 of 100, findings by severity, file and package details">
 
 PkgScope unpacks a package without installing it, shows what goes where, flags anything
 suspicious and explains why it matters. It can also run the installer in a throwaway sandbox and
@@ -42,16 +42,16 @@ nothing is left behind.
 
 | your system | file from the [latest release](https://github.com/Trendorin/pkgscope/releases/latest) |
 |---|---|
-| Arch Linux, CachyOS, Manjaro | `pkgscope-1.0.0-1-x86_64.pkg.tar.zst` |
-| Debian 13 and newer | `pkgscope_1.0.0-1_amd64.deb` |
-| Fedora 44 and newer | `pkgscope-1.0.0-1.fc44.x86_64.rpm` |
-| any distribution with glibc 2.35+ | `PkgScope-1.0.0-x86_64.AppImage` |
+| Arch Linux, CachyOS, Manjaro | `pkgscope-1.0.1-1-x86_64.pkg.tar.zst` |
+| Debian 13 and newer | `pkgscope_1.0.1-1_amd64.deb` |
+| Fedora 44 and newer | `pkgscope-1.0.1-1.fc44.x86_64.rpm` |
+| any distribution with glibc 2.35+ | `PkgScope-1.0.1-x86_64.AppImage` |
 
 ```sh
-sudo pacman -U ./pkgscope-1.0.0-1-x86_64.pkg.tar.zst    # Arch
-sudo apt install ./pkgscope_1.0.0-1_amd64.deb            # Debian
-sudo dnf install ./pkgscope-1.0.0-1.fc44.x86_64.rpm      # Fedora
-chmod +x PkgScope-1.0.0-x86_64.AppImage && ./PkgScope-1.0.0-x86_64.AppImage
+sudo pacman -U ./pkgscope-1.0.1-1-x86_64.pkg.tar.zst    # Arch
+sudo apt install ./pkgscope_1.0.1-1_amd64.deb            # Debian
+sudo dnf install ./pkgscope-1.0.1-1.fc44.x86_64.rpm      # Fedora
+chmod +x PkgScope-1.0.1-x86_64.AppImage && ./PkgScope-1.0.1-x86_64.AppImage
 ```
 
 Every package is built in a clean container of its distribution, then installed and started
@@ -76,7 +76,7 @@ git clone https://github.com/Trendorin/pkgscope && cd pkgscope
 Open a file, or drop it on the window, and press **Inspect**. **Inspect & Trace** also runs the
 installer in the sandbox. Every finding shows its severity, an explanation and the evidence.
 
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-findings-dark.png"><img src=".github/assets/screenshot-findings-light.png" width="49%" alt="Findings sorted by severity"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-scripts-dark.png"><img src=".github/assets/screenshot-scripts-light.png" width="49%" alt="The postinst script with the lines that triggered rules highlighted"></picture>
+<img src=".github/assets/screenshot-findings.png" width="49%" alt="Findings sorted by severity"> <img src=".github/assets/screenshot-scripts.png" width="49%" alt="The postinst script with the lines that triggered rules highlighted">
 
 From a terminal or in CI:
 

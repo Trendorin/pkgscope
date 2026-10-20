@@ -582,6 +582,43 @@ bool StaticAnalyzer::doRpm(Ctx &c)
     return ok;
 }
 
+// Moves a regular file from beneath `root` to `dest` without following any symlink on the way. The
+// archive may have replaced a directory of the payload by a link to somewhere on the host
+// (install -> ~/.ssh); a pathname rename() would then carry the host's files away.
+static bool moveBeneath(const QString &root, const QString &rel, const QString &dest)
+{
+    const int in = securefs::openBeneath(root, rel, O_RDONLY | O_NOFOLLOW | O_CLOEXEC);
+    if (in < 0) return false;
+    struct stat st{};
+    bool ok = ::fstat(in, &st) == 0 && S_ISREG(st.st_mode);
+    if (ok) {
+        const int out = ::open(QFile::encodeName(dest).constData(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC, 0644);
+        ok = out >= 0;
+        char buf[65536];
+        while (ok) {
+            const ssize_t n = ::read(in, buf, sizeof buf);
+            if (n < 0) { ok = false; break; }
+            if (n == 0) break;
+            for (ssize_t done = 0; done < n;) {
+                const ssize_t w = ::write(out, buf + done, size_t(n - done));
+                if (w < 0) { ok = false; break; }
+                done += w;
+            }
+        }
+        if (out >= 0) ::close(out);
+    }
+    ::close(in);
+    if (!ok) return false;
+    const QString parent = rel.section(QLatin1Char('/'), 0, -2);
+    const int pfd = parent.isEmpty() ? ::open(QFile::encodeName(root).constData(), O_RDONLY | O_DIRECTORY | O_CLOEXEC)
+                                     : securefs::openBeneath(root, parent, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (pfd >= 0) {
+        ::unlinkat(pfd, QFile::encodeName(rel.section(QLatin1Char('/'), -1)).constData(), 0);
+        ::close(pfd);
+    }
+    return true;
+}
+
 bool StaticAnalyzer::doTarPackage(Ctx &c)
 {
     ExtractLimits lim;
@@ -604,7 +641,7 @@ bool StaticAnalyzer::doTarPackage(Ctx &c)
         if (!isMeta(fe.path)) { kept << fe; continue; }
         if (fe.type == QLatin1String("file")) {
             const QString base = fe.path.section(QLatin1Char('/'), -1);
-            ::rename(QFile::encodeName(pd + fe.path).constData(), QFile::encodeName(cd + QLatin1Char('/') + base).constData());
+            moveBeneath(pd, fe.path.mid(1), cd + QLatin1Char('/') + base);
         }
     }
     c.payload.entries = kept;

@@ -168,7 +168,14 @@ struct Writer {
                     if (dst >= 0 && ::fstat(src, &sst) == 0 && S_ISREG(sst.st_mode)) {
                         char buf[1 << 16];
                         ssize_t r;
+                        // A copy costs as much as the original: thousands of hardlinks to one file
+                        // must not get around the extraction limit.
                         while ((r = ::read(src, buf, sizeof buf)) > 0) {
+                            if (st.totalBytes + static_cast<quint64>(r) > lim.maxTotalBytes) {
+                                st.truncated = true;
+                                break;
+                            }
+                            st.totalBytes += static_cast<quint64>(r);
                             if (::write(dst, buf, static_cast<size_t>(r)) != r) break;
                         }
                         ::fchmod(dst, (sst.st_mode & 0755) | 0600);

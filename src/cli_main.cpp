@@ -66,10 +66,13 @@ int main(int argc, char **argv)
         err << "\nAnalysis failed: " << r.log.join(QLatin1Char('\n')) << '\n';
         return 1;
     }
+    int failure = 0; // a requested step that did not happen must not look like success in CI
     if (p.isSet(trace)) {
         DynamicTracer tracer(s, &analyzer);
-        if (!tracer.run(r, *ws, progress, &g_cancel))
+        if (!tracer.run(r, *ws, progress, &g_cancel)) {
             err << "\nBehaviour trace incomplete: " << r.behavior.sandboxNotes << '\n';
+            failure = 4;
+        }
         if (s.keepRunDir) ws->setKeep(true);
     }
     if (live) err << "\r" << QString(82, QLatin1Char(' ')) << "\r";
@@ -93,10 +96,10 @@ int main(int argc, char **argv)
     out.flush();
 
     QString e;
-    if (p.isSet(json) && !ReportWriter::write(r, p.value(json), &e, QStringLiteral("json"))) err << "JSON: " << e << '\n';
-    if (p.isSet(html) && !ReportWriter::write(r, p.value(html), &e, QStringLiteral("html"))) err << "HTML: " << e << '\n';
-    if (p.isSet(md) && !ReportWriter::write(r, p.value(md), &e, QStringLiteral("md"))) err << "Markdown: " << e << '\n';
+    if (p.isSet(json) && !ReportWriter::write(r, p.value(json), &e, QStringLiteral("json"))) { err << "JSON: " << e << '\n'; failure = 1; }
+    if (p.isSet(html) && !ReportWriter::write(r, p.value(html), &e, QStringLiteral("html"))) { err << "HTML: " << e << '\n'; failure = 1; }
+    if (p.isSet(md) && !ReportWriter::write(r, p.value(md), &e, QStringLiteral("md"))) { err << "Markdown: " << e << '\n'; failure = 1; }
 
     if (p.isSet(failOn) && r.countAtLeast(severityFromName(p.value(failOn))) > 0) return 3;
-    return 0;
+    return failure;
 }

@@ -20,6 +20,8 @@
 #include <csignal>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <climits>
+#include <unistd.h>
 #include <unistd.h>
 
 namespace ps {
@@ -364,7 +366,18 @@ void DynamicTracer::placePayload(Workspace &ws, const QString &runDir, BehaviorR
         if (S_ISDIR(st.st_mode)) {
             if (securefs::copyTree(src, dst, &err) < 0)
                 out.sandboxNotes += QStringLiteral("Could not stage %1: %2\n").arg(name, err);
-        } else {
+        } else if (S_ISLNK(st.st_mode)) {
+            // Recreate the link itself. QFile::copy would follow it and put the host file it
+            // points to (say ~/.ssh/id_rsa) into the sandbox as a regular file.
+            char target[PATH_MAX];
+            const ssize_t n = ::readlink(QFile::encodeName(src).constData(), target, sizeof target - 1);
+            if (n > 0) {
+                target[n] = '\0';
+                QFile::remove(dst);
+                if (::symlink(target, QFile::encodeName(dst).constData()) != 0)
+                    out.sandboxNotes += QStringLiteral("Could not stage the link %1\n").arg(name);
+            }
+        } else if (S_ISREG(st.st_mode)) {
             QFile::remove(dst);
             QFile::copy(src, dst);
         }

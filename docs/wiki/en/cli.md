@@ -24,6 +24,8 @@ pkgscope-cli [options] FILE
 | 1 | the file could not be analysed |
 | 2 | wrong arguments |
 | 3 | `--fail-on` matched a finding |
+| 4 | `--trace` was requested but the sandbox run did not complete (the static result is still printed) |
+| 1 | also: a requested report file could not be written |
 
 ## In CI
 

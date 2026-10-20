@@ -5,6 +5,30 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-10-20
+
+Security and correctness fixes after an independent review.
+
+### Security
+- Slackware and other tar packages: package metadata is moved out of the install tree without
+  following symlinks. A package could replace `install/` by a link to a host directory and make
+  the move carry files from there into the workspace.
+- A tracing run copies archive symlinks as symlinks. Before, a link such as `loot -> ~/.ssh/id_rsa`
+  put the host file into the sandbox as a regular file where installer code could read it.
+- The sandbox binds `/sys` without the host's submounts. They kept writable flags, so a delegated
+  cgroup's `cgroup.kill` could be written from inside.
+- Hardlinks count against the extraction size limit like any other file.
+- Release builds pin every GitHub Action to a commit and check the AppImage tools against a SHA-256.
+- The installer no longer interpolates the prefix into `sed` programs, quotes the desktop entry path
+  and refuses uninstall manifest entries that leave the prefix.
+
+### Fixed
+- Behaviour traces no longer drop the main program's activity: the helper's own calls before the
+  marker used to hide the program from the parser.
+- `pkgscope-cli` returns a failure when `--trace` could not complete (4) or a requested report could not
+  be written (1); before, both looked like success to CI.
+
+
 ## [1.0.0] — 2026-10-20
 
 First release.
@@ -47,5 +71,6 @@ First release.
   setuid bits, device nodes, size limits) and a libFuzzer harness for every parser, run under
   AddressSanitizer and UndefinedBehaviorSanitizer in CI.
 
-[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Trendorin/pkgscope/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Trendorin/pkgscope/releases/tag/v1.0.0

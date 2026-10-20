@@ -133,6 +133,19 @@ int main()
     ArchiveReader::extractFile(big, ArchiveKind::Tar, tmp.filePath(QStringLiteral("dest2")), lim, &st2, nullptr);
     check(st2.truncated || !st2.error.isEmpty(), "size limit stops extraction");
 
+    // Hardlinks are copies: each one counts against the limit.
+    const QString links = writeTar(tmp.filePath(QStringLiteral("links.tar")), {
+        {"a", AE_IFREG, 0644, "0123456789012345678901234567890123456789"},
+        {"b", AE_IFREG, 0644, "", "a", true},
+        {"c", AE_IFREG, 0644, "", "a", true},
+        {"d", AE_IFREG, 0644, "", "a", true},
+    });
+    ExtractStats st3;
+    ExtractLimits lim3;
+    lim3.maxTotalBytes = 100;
+    ArchiveReader::extractFile(links, ArchiveKind::Tar, tmp.filePath(QStringLiteral("dest3")), lim3, &st3, nullptr);
+    check(st3.totalBytes <= 100 && st3.truncated, "hardlink copies count against the size limit");
+
     // Name sanitizer.
     bool trav = false;
     check(securefs::sanitizeRelative(QStringLiteral("a/../../b"), &trav).isEmpty() || !securefs::sanitizeRelative(QStringLiteral("a/../../b")).contains(QLatin1String("..")),

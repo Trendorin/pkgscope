@@ -6,7 +6,7 @@
 
 Загляните внутрь Linux-пакета до установки.
 
-[![Релиз](https://img.shields.io/badge/release-v1.0.0-0b8f7a)](https://github.com/Trendorin/pkgscope/releases/latest)
+[![Релиз](https://img.shields.io/badge/release-v1.0.1-0b8f7a)](https://github.com/Trendorin/pkgscope/releases/latest)
 [![Лицензия](https://img.shields.io/badge/license-MIT-0b8f7a)](LICENSE)
 ![Qt](https://img.shields.io/badge/Qt-6-0b8f7a)
 ![Платформа](https://img.shields.io/badge/platform-Linux-0b8f7a)
@@ -15,7 +15,7 @@
 
 </div>
 
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-overview-dark.png"><img src=".github/assets/screenshot-overview-light.png" width="100%" alt="PkgScope с подозрительным демо-пакетом: риск 100 из 100, находки по важности, сведения о файле и пакете"></picture>
+<img src=".github/assets/screenshot-overview.png" width="100%" alt="PkgScope с подозрительным демо-пакетом: риск 100 из 100, находки по важности, сведения о файле и пакете">
 
 PkgScope распаковывает пакет, не устанавливая его, показывает, что куда ляжет, отмечает
 подозрительное и объясняет, почему это важно. Ещё он может запустить установщик в одноразовой
@@ -42,16 +42,16 @@ PkgScope распаковывает пакет, не устанавливая е
 
 | ваша система | файл из [последнего релиза](https://github.com/Trendorin/pkgscope/releases/latest) |
 |---|---|
-| Arch Linux, CachyOS, Manjaro | `pkgscope-1.0.0-1-x86_64.pkg.tar.zst` |
-| Debian 13 и новее | `pkgscope_1.0.0-1_amd64.deb` |
-| Fedora 44 и новее | `pkgscope-1.0.0-1.fc44.x86_64.rpm` |
-| любой дистрибутив с glibc 2.35+ | `PkgScope-1.0.0-x86_64.AppImage` |
+| Arch Linux, CachyOS, Manjaro | `pkgscope-1.0.1-1-x86_64.pkg.tar.zst` |
+| Debian 13 и новее | `pkgscope_1.0.1-1_amd64.deb` |
+| Fedora 44 и новее | `pkgscope-1.0.1-1.fc44.x86_64.rpm` |
+| любой дистрибутив с glibc 2.35+ | `PkgScope-1.0.1-x86_64.AppImage` |
 
 ```sh
-sudo pacman -U ./pkgscope-1.0.0-1-x86_64.pkg.tar.zst    # Arch
-sudo apt install ./pkgscope_1.0.0-1_amd64.deb            # Debian
-sudo dnf install ./pkgscope-1.0.0-1.fc44.x86_64.rpm      # Fedora
-chmod +x PkgScope-1.0.0-x86_64.AppImage && ./PkgScope-1.0.0-x86_64.AppImage
+sudo pacman -U ./pkgscope-1.0.1-1-x86_64.pkg.tar.zst    # Arch
+sudo apt install ./pkgscope_1.0.1-1_amd64.deb            # Debian
+sudo dnf install ./pkgscope-1.0.1-1.fc44.x86_64.rpm      # Fedora
+chmod +x PkgScope-1.0.1-x86_64.AppImage && ./PkgScope-1.0.1-x86_64.AppImage
 ```
 
 Каждый пакет собирается в чистом контейнере своего дистрибутива, затем ставится и запускается
@@ -76,7 +76,7 @@ git clone https://github.com/Trendorin/pkgscope && cd pkgscope
 Откройте файл или перетащите его в окно и нажмите **Inspect**. **Inspect & Trace** ещё и запустит
 установщик в песочнице. У каждой находки есть важность, объяснение и доказательство.
 
-<picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-findings-dark.png"><img src=".github/assets/screenshot-findings-light.png" width="49%" alt="Находки по важности"></picture> <picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshot-scripts-dark.png"><img src=".github/assets/screenshot-scripts-light.png" width="49%" alt="Скрипт postinst с подсвеченными строками, сработавшими на правила"></picture>
+<img src=".github/assets/screenshot-findings.png" width="49%" alt="Находки по важности"> <img src=".github/assets/screenshot-scripts.png" width="49%" alt="Скрипт postinst с подсвеченными строками, сработавшими на правила">
 
 Из терминала или в CI:
 
