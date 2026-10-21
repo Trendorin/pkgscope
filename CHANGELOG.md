@@ -5,6 +5,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-21
+
 ### Added
 - The AppImage carries its own `strace` and `unsquashfs` (built from the release tarballs, checked
   against pinned SHA-256 sums), so tracing and unpacking AppImages and Snaps work without installing
@@ -31,7 +33,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ### Fixed
 - The 1.1.1 AppImage held world-writable copyright files, and PkgScope rated its own binaries
   Critical because a rule title contained the path it looks for. Inspecting the AppImage with
-  itself now gives "No major concerns"; the release workflow checks both.
+  itself now shows no high or critical findings (a medium one says, rightly, that
+  `--setup-sandbox` can load the overlay module); the release workflow checks both.
 - Builds with Qt 6.4 (Debian 12, Ubuntu 24.04) failed; the minimum Qt is now stated as 6.4.
 - With `overlay` missing, `install.sh --setup` also adds `/etc/modules-load.d/pkgscope.conf`, so the
   module is there after a reboot too.
@@ -123,7 +126,8 @@ First release.
   setuid bits, device nodes, size limits) and a libFuzzer harness for every parser, run under
   AddressSanitizer and UndefinedBehaviorSanitizer in CI.
 
-[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Trendorin/pkgscope/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Trendorin/pkgscope/releases/tag/v1.2.0
 [1.1.1]: https://github.com/Trendorin/pkgscope/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Trendorin/pkgscope/releases/tag/v1.1.0
 [1.0.1]: https://github.com/Trendorin/pkgscope/releases/tag/v1.0.1

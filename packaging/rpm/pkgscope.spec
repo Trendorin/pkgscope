@@ -1,5 +1,5 @@
 Name:           pkgscope
-Version:        1.1.1
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Inspect Linux packages before installing them
 License:        MIT
@@ -52,6 +52,10 @@ modprobe overlay >/dev/null 2>&1 || :
 %{_datadir}/icons/hicolor/scalable/apps/io.github.trendorin.PkgScope.svg
 
 %changelog
+* Wed Oct 21 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.2.0-1
+- Works out of the box: AppImage carries strace and unsquashfs; installer installs missing packages
+- Security hardening, see CHANGELOG.md
+
 * Tue Oct 20 2026 Trendorin <193045225+Trendorin@users.noreply.github.com> - 1.1.1-1
 - AppImage fix: Qt Wayland shell plugins
 
