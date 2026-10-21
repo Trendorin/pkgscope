@@ -24,6 +24,7 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
+#include <QTextDocument>
 #include <QTabWidget>
 #include <QThread>
 #include <QToolBar>
@@ -171,8 +172,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     tf.setPointSizeF(tf.pointSizeF() + 4);
     tf.setBold(true);
     m_headerTitle->setFont(tf);
+    // File name, package name and version come from the package: never let Qt read them as rich text.
+    m_headerTitle->setTextFormat(Qt::PlainText);
     m_headerTitle->setTextInteractionFlags(Qt::TextSelectableByMouse);
     m_headerSub = new QLabel;
+    m_headerSub->setTextFormat(Qt::PlainText);
     m_headerSub->setTextInteractionFlags(Qt::TextSelectableByMouse);
     QPalette subPal = m_headerSub->palette();
     subPal.setColor(QPalette::WindowText, subPal.color(QPalette::PlaceholderText));
@@ -412,7 +416,7 @@ QWidget *MainWindow::buildBinariesTab()
         const int i = it->data(0, Qt::UserRole).toInt();
         if (i < 0 || i >= m_result.binaries.size()) return;
         const ElfInfo &e = m_result.binaries[i];
-        QString h = QStringLiteral("<h3>%1</h3><p>%2 · %3 · %4</p>").arg(e.path.toHtmlEscaped(), e.elfType, e.machine, e.language);
+        QString h = QStringLiteral("<h3>%1</h3><p>%2 · %3 · %4</p>").arg(e.path.toHtmlEscaped(), e.elfType.toHtmlEscaped(), e.machine.toHtmlEscaped(), e.language.toHtmlEscaped());
         const auto list = [](const QString &title, const QStringList &items) {
             return items.isEmpty() ? QString() : QStringLiteral("<p><b>%1</b><br><code>%2</code></p>").arg(title, items.join(QStringLiteral(", ")).toHtmlEscaped());
         };
@@ -514,7 +518,7 @@ void MainWindow::openPath(const QString &path)
 {
     QFileInfo fi(path);
     if (!fi.isFile()) {
-        QMessageBox::warning(this, tr("PkgScope"), tr("Not a readable file:\n%1").arg(path));
+        QMessageBox::warning(this, tr("PkgScope"), Qt::convertFromPlainText(tr("Not a readable file:\n%1").arg(path)));
         return;
     }
     m_pendingPath = fi.absoluteFilePath();
@@ -587,7 +591,7 @@ void MainWindow::onFailed(const QString &message)
     setBusy(false, QString());
     updateActions();
     if (message != QLatin1String("Cancelled."))
-        QMessageBox::warning(this, tr("Analysis failed"), message);
+        QMessageBox::warning(this, tr("Analysis failed"), Qt::convertFromPlainText(message));
     statusBar()->showMessage(message, 8000);
 }
 
@@ -647,7 +651,7 @@ void MainWindow::exportReport()
         m_settings.save();
         statusBar()->showMessage(tr("Report saved to %1").arg(path), 8000);
     } else {
-        QMessageBox::warning(this, tr("Export failed"), err);
+        QMessageBox::warning(this, tr("Export failed"), Qt::convertFromPlainText(err));
     }
 }
 
@@ -679,7 +683,8 @@ void MainWindow::checkSandbox()
         msg += QStringLiteral("</ul>");
     }
     msg += QStringLiteral("<p style='%1'>Helper: <code>%2</code><br>strace: <code>%3</code></p>")
-               .arg(theme::mutedStyle(), env.helper.isEmpty() ? tr("(not found)") : env.helper, env.straceVersion.isEmpty() ? env.strace : env.straceVersion);
+               .arg(theme::mutedStyle(), env.helper.isEmpty() ? tr("(not found)") : env.helper.toHtmlEscaped(),
+                    (env.straceVersion.isEmpty() ? env.strace : env.straceVersion).toHtmlEscaped());
     QMessageBox box(this);
     box.setWindowTitle(tr("Sandbox support"));
     box.setTextFormat(Qt::RichText);
@@ -909,7 +914,7 @@ void MainWindow::populate()
         for (const ProcessInfo &p : b.processes) {
             const QString status = !p.exitSignal.isEmpty() ? p.exitSignal : (p.exitCode >= 0 ? tr("exit %1").arg(p.exitCode) : QString());
             auto *it = new QTreeWidgetItem(QStringList{p.exe.isEmpty() ? tr("(fork)") : p.exe, QString::number(p.pid), QStringLiteral("%1s").arg(p.start, 0, 'f', 2), status});
-            it->setToolTip(0, p.argv.join(QLatin1Char(' ')));
+            it->setToolTip(0, Qt::convertFromPlainText(p.argv.join(QLatin1Char(' ')))); // argv comes from the traced program
             items.insert(p.pid, it);
         }
         for (const ProcessInfo &p : b.processes) {

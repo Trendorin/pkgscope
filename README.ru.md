@@ -56,12 +56,14 @@ chmod +x PkgScope-1.1.1-x86_64.AppImage && ./PkgScope-1.1.1-x86_64.AppImage
 
 Каждый пакет собирается в чистом контейнере своего дистрибутива, затем ставится и запускается
 там до публикации. Проверить файлы: `sha256sum --ignore-missing -c SHA256SUMS`.
-`./PkgScope-*.AppImage --cli FILE` запускает командную строку. Для трассировки нужны `strace` и
-`squashfs-tools`; пакеты ставят их сами.
+`./PkgScope-*.AppImage --cli FILE` запускает командную строку. Доустанавливать ничего не нужно:
+пакеты ставят `strace` и `squashfs-tools`, в AppImage они свои. В Ubuntu 24.04+ один раз запустите
+AppImage с `--setup-sandbox`, чтобы разрешить трассировку (спросит пароль).
 
 ### Из исходников
 
-Нужны CMake 3.19+, компилятор C++20, заголовки Qt 6 и libarchive.
+`install.sh` проверит CMake, компилятор C++20, Qt 6.4+ и libarchive и предложит доставить
+недостающее через pacman, apt, dnf или zypper.
 
 ```sh
 git clone https://github.com/Trendorin/pkgscope && cd pkgscope
@@ -69,7 +71,8 @@ git clone https://github.com/Trendorin/pkgscope && cd pkgscope
 ./install.sh --uninstall     # удалит ровно то, что поставил
 ```
 
-`./install.sh --help` покажет параметры (`--yes`, `--prefix`, `--no-gui`, `--setup`).
+`./install.sh --help` покажет параметры (`--yes`, `--prefix`, `--no-gui`, `--setup`,
+`--no-packages`).
 
 ## Начало работы
 

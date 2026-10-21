@@ -35,7 +35,7 @@
 
 | сообщение или система | что сделать |
 |---|---|
-| Ubuntu 24.04+ | пакет Debian ставит профиль AppArmor; из исходников — `./install.sh --setup` |
-| `overlay … read-only`, нет overlayfs | `sudo modprobe overlay` (пакеты загружают модуль при старте) |
-| не найден `strace` | поставьте `strace` |
-| AppImage не распаковывается | поставьте `squashfs-tools` |
+| Ubuntu 24.04+ | пакет Debian ставит профиль AppArmor; AppImage — один раз запустите с `--setup-sandbox`; из исходников — `./install.sh --setup` |
+| `overlay … read-only`, нет overlayfs | эти же три способа загружают модуль сразу и при старте; вручную — `sudo modprobe overlay` |
+| не найден `strace` | он есть в пакетах и в AppImage; из исходников снова запустите `./install.sh` и согласитесь поставить пакеты |
+| AppImage не распаковывается | как со `strace`: `unsquashfs` идёт с пакетами и с AppImage |

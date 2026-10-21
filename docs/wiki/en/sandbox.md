@@ -33,7 +33,7 @@ install. Runtime findings are marked "runtime".
 
 | message or system | fix |
 |---|---|
-| Ubuntu 24.04+ | the Debian package installs the AppArmor profile; from source run `./install.sh --setup` |
-| `overlay … read-only`, no overlayfs | `sudo modprobe overlay` (the packages load it at boot) |
-| `strace` not found | install `strace` |
-| AppImage cannot be unpacked | install `squashfs-tools` |
+| Ubuntu 24.04+ | the Debian package installs the AppArmor profile; AppImage: run it once with `--setup-sandbox`; from source: `./install.sh --setup` |
+| `overlay … read-only`, no overlayfs | the same three ways load it now and at boot; by hand: `sudo modprobe overlay` |
+| `strace` not found | the packages and the AppImage bring it; from source rerun `./install.sh` and accept the packages |
+| AppImage cannot be unpacked | same as `strace`: `unsquashfs` comes with the packages and the AppImage |

@@ -6,11 +6,13 @@
 #   ./install.sh --prefix DIR    install into DIR/bin and DIR/share (default ~/.local)
 #   ./install.sh --no-gui        command line only (pkgscope-cli and the sandbox helper)
 #   ./install.sh --setup         also prepare the system for tracing (AppArmor, overlay; asks for your password)
+#   ./install.sh --no-packages   never install missing distribution packages, only name them
 #   ./install.sh --uninstall     remove PkgScope (add --purge to delete settings and cache too)
 #
 # Builds from this source checkout with CMake. Prebuilt packages (Arch, Debian,
-# Fedora, AppImage) are on the releases page. Never uses sudo for the install:
-# only the optional sandbox setup asks for your password.
+# Fedora, AppImage) are on the releases page. PkgScope itself goes into your home
+# without sudo; sudo is used only, after asking, to install missing distribution
+# packages (pacman, apt, dnf or zypper) and for the optional sandbox setup.
 
 set -euo pipefail
 
@@ -23,7 +25,9 @@ ASSUME_YES=0
 ACTION=install
 PURGE=0
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; }
+PACKAGES=1
+
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -32,6 +36,7 @@ while [ $# -gt 0 ]; do
         --no-gui) GUI=0; shift ;;
         --setup) SETUP=yes; shift ;;
         --no-setup) SETUP=no; shift ;;
+        --no-packages) PACKAGES=0; shift ;;
         -y | --yes) ASSUME_YES=1; shift ;;
         --uninstall) ACTION=uninstall; shift ;;
         --purge) PURGE=1; shift ;;
@@ -195,23 +200,56 @@ distro() {
         *" arch "*) printf arch ;;
         *" debian "* | *" ubuntu "*) printf debian ;;
         *" fedora "* | *" rhel "*) printf fedora ;;
+        *" suse "* | *" opensuse "*) printf suse ;;
         *) printf other ;;
     esac
 }
 
-# need_packages "what" arch-pkgs debian-pkgs fedora-pkgs → stops with the right install command
-need_packages() {
-    local what="$1" cmd
+# as_root command... — runs it directly when we are root (containers), otherwise through sudo
+as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi; }
+
+# pkg_install arch-pkgs debian-pkgs fedora-pkgs suse-pkgs — the package manager call, as root
+pkg_install() {
     case "$(distro)" in
-        arch) cmd="sudo pacman -S --needed $2" ;;
-        debian) cmd="sudo apt install $3" ;;
-        fedora) cmd="sudo dnf install $4" ;;
-        *) cmd="" ;;
+        arch) as_root pacman -S --needed --noconfirm $1 ;;
+        debian) as_root env DEBIAN_FRONTEND=noninteractive sh -c "apt-get update -q && apt-get install -y --no-install-recommends $2" ;;
+        fedora) as_root dnf install -y $3 ;;
+        suse) as_root zypper --non-interactive install $4 ;;
+        *) return 1 ;;
     esac
-    printf '\n  %s✗ %s%s\n' "$RED" "$what" "$R" >&2
-    [ -n "$cmd" ] && printf '\n    Install them with:\n      %s%s%s\n' "$B" "$cmd" "$R" >&2
-    printf '\n    Then run ./install.sh again.\n\n' >&2
-    exit 1
+}
+
+# pkg_hint arch-pkgs debian-pkgs fedora-pkgs suse-pkgs → the command a person would type
+pkg_hint() {
+    case "$(distro)" in
+        arch) printf 'sudo pacman -S --needed %s' "$1" ;;
+        debian) printf 'sudo apt install %s' "$2" ;;
+        fedora) printf 'sudo dnf install %s' "$3" ;;
+        suse) printf 'sudo zypper install %s' "$4" ;;
+    esac
+}
+
+# get_packages "what is missing" arch-pkgs debian-pkgs fedora-pkgs suse-pkgs
+# Offers to install the packages (default yes) and returns 0 once they are in. Asks for the sudo
+# password in the foreground, before the progress line starts.
+get_packages() {
+    local what="$1" hint
+    shift
+    hint="$(pkg_hint "$@")"
+    warn "$what"
+    if [ -z "$hint" ]; then
+        info "install them with your distribution's package manager"
+        return 1
+    fi
+    if [ "$PACKAGES" = 1 ] && ask_yn "Install them now ($hint)?" y; then
+        if [ "$(id -u)" = 0 ] || { [ "$INTERACTIVE" = 0 ] && ! [ -t 0 ] && sudo -n true 2>/dev/null; } || { [ -t 0 ] && sudo -v; }; then
+            ( spin "Installing packages" pkg_install "$@" ) && return 0
+        else
+            warn "sudo is not available here"
+        fi
+    fi
+    info "install them with:  $hint"
+    return 1
 }
 
 progress() { cmake_progress "$1"; }
@@ -222,7 +260,13 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -f "$SRC_DIR/CMakeLists.txt" ] && [ -d "$SRC_DIR/src/core" ] || die "run install.sh from the PkgScope source folder"
 VERSION="$(sed -n 's/^project(PkgScope VERSION \([0-9.]*\).*/\1/p' "$SRC_DIR/CMakeLists.txt")"
 BUILD_DIR="$SRC_DIR/build"
-APPARMOR_PROFILE=/etc/apparmor.d/pkgscope-sandbox
+# On systems that restrict user namespaces (Ubuntu 24.04+) AppArmor must allow them for the helper.
+# The profile names a root-owned copy: the helper in the install prefix could be replaced by any
+# program of the user. PkgScope prefers that copy when the restriction is on.
+SYS_HELPER=/usr/local/libexec/pkgscope/pkgscope-sandbox
+APPARMOR_PROFILE=/etc/apparmor.d/pkgscope-sandbox-local
+OLD_PROFILE=/etc/apparmor.d/pkgscope-sandbox   # 1.1.1 and older: profiled the helper in the prefix
+MODULES_CONF=/etc/modules-load.d/pkgscope.conf
 
 set_paths() {
     case "$PREFIX" in /*) ;; *) PREFIX="$PWD/$PREFIX" ;; esac
@@ -234,7 +278,10 @@ set_paths() {
 set_paths
 
 installed_version() {
-    if [ -x "$BIN_DIR/pkgscope-cli" ]; then "$BIN_DIR/pkgscope-cli" --version 2>/dev/null | awk '{print $2}'; fi
+    local name ver
+    if [ -x "$BIN_DIR/pkgscope-cli" ]; then
+        read -r name ver _ < <("$BIN_DIR/pkgscope-cli" --version 2>/dev/null) && printf '%s' "$ver"
+    fi
 }
 
 refresh_menus() {
@@ -264,11 +311,15 @@ uninstall() {
         [ -d "$d" ] && rmdir --ignore-fail-on-non-empty "$d" 2>/dev/null || true
     done
     refresh_menus
-    if [ -f "$APPARMOR_PROFILE" ] && grep -q "$PREFIX" "$APPARMOR_PROFILE" 2>/dev/null; then
-        if ask_yn "Also remove the AppArmor profile for the sandbox (asks for your password)?" y; then
-            sudo apparmor_parser -R "$APPARMOR_PROFILE" 2>/dev/null || true
-            sudo rm -f "$APPARMOR_PROFILE" && ok "removed $APPARMOR_PROFILE"
-        fi
+    local sys=()
+    for f in "$APPARMOR_PROFILE" "$SYS_HELPER" "$MODULES_CONF"; do [ -e "$f" ] && sys+=("$f"); done
+    grep -Fqs "$PREFIX" "$OLD_PROFILE" && sys+=("$OLD_PROFILE")
+    if [ ${#sys[@]} -gt 0 ] && ask_yn "Also remove the sandbox setup ($(IFS=' '; printf '%s' "${sys[*]}")) — asks for your password?" y; then
+        for f in "${sys[@]}"; do
+            case "$f" in *.d/pkgscope-sandbox*) as_root apparmor_parser -R "$f" 2>/dev/null || true ;; esac
+            as_root rm -f "$f" && ok "removed $f"
+        done
+        as_root rmdir "${SYS_HELPER%/*}" 2>/dev/null || true
     fi
     if [ "$PURGE" = 1 ] || { [ "$ASSUME_YES" = 0 ] && ask_yn "Also delete your settings and cache?" n; }; then
         for d in "${XDG_CONFIG_HOME:-$HOME/.config}/pkgscope" "${XDG_CACHE_HOME:-$HOME/.cache}/pkgscope"; do
@@ -280,41 +331,76 @@ uninstall() {
 
 # ---- checks --------------------------------------------------------------------------------
 
+# Everything PkgScope needs, to build and to run, per distribution (arch, debian, fedora, suse).
+BUILD_PKGS=(
+    "base-devel cmake ninja qt6-base libarchive strace squashfs-tools"
+    "build-essential cmake ninja-build qt6-base-dev libarchive-dev strace squashfs-tools"
+    "gcc-c++ cmake ninja-build qt6-qtbase-devel libarchive-devel strace squashfs-tools"
+    "gcc-c++ cmake ninja qt6-base-devel libarchive-devel strace squashfs"
+)
+RUNTIME_PKGS=("strace squashfs-tools" "strace squashfs-tools" "strace squashfs-tools" "strace squashfs")
+
+QMAKE=""
+# build_tools_present → 0 when CMake, a C++ compiler, Qt 6 and the libarchive headers are there
+build_tools_present() {
+    local cand
+    QMAKE=""
+    for cand in qmake6 /usr/lib/qt6/bin/qmake /usr/lib64/qt6/bin/qmake /usr/lib/x86_64-linux-gnu/qt6/bin/qmake qmake-qt6 qmake; do
+        if command -v "$cand" >/dev/null 2>&1 && "$cand" -query QT_VERSION 2>/dev/null | grep -q '^6\.'; then QMAKE="$cand"; break; fi
+    done
+    command -v cmake >/dev/null 2>&1 &&
+        { command -v ninja >/dev/null 2>&1 || command -v make >/dev/null 2>&1; } &&
+        { command -v c++ >/dev/null 2>&1 || command -v g++ >/dev/null 2>&1 || command -v clang++ >/dev/null 2>&1; } &&
+        [ -n "$QMAKE" ] &&
+        { [ -e /usr/include/archive.h ] || pkg-config --exists libarchive 2>/dev/null; }
+}
+
+missing_runtime() {
+    local t absent=()
+    for t in strace unsquashfs; do command -v "$t" >/dev/null 2>&1 || absent+=("$t"); done
+    printf '%s' "${absent[*]}"
+}
+
 check_system() {
     step "Checking your system"
     [ "$(uname -s)" = Linux ] || die "PkgScope runs on Linux only"
-    ok "Linux $(uname -m)"
-    local missing=0 q="" cand
-    command -v cmake >/dev/null 2>&1 || missing=1
-    command -v c++ >/dev/null 2>&1 || command -v g++ >/dev/null 2>&1 || command -v clang++ >/dev/null 2>&1 || missing=1
-    for cand in qmake6 /usr/lib/qt6/bin/qmake /usr/lib64/qt6/bin/qmake qmake-qt6 qmake; do
-        if command -v "$cand" >/dev/null 2>&1 && "$cand" -query QT_VERSION 2>/dev/null | grep -q '^6\.'; then q="$cand"; break; fi
-    done
-    [ -n "$q" ] || missing=1
-    [ -e /usr/include/archive.h ] || pkg-config --exists libarchive 2>/dev/null || missing=1
-    if [ "$missing" = 1 ]; then
-        need_packages "CMake, a C++ compiler, Qt 6 and libarchive are needed to build PkgScope." \
-            "base-devel cmake ninja qt6-base libarchive strace squashfs-tools" \
-            "build-essential cmake ninja-build qt6-base-dev libarchive-dev strace squashfs-tools" \
-            "gcc-c++ cmake ninja-build qt6-qtbase-devel libarchive-devel strace squashfs-tools"
+    ok "Linux $(uname -m) · $(. /etc/os-release 2>/dev/null && printf '%s' "${PRETTY_NAME:-unknown distribution}")"
+    if ! build_tools_present; then
+        get_packages "CMake, a C++ compiler, Qt 6 and libarchive are needed to build PkgScope" "${BUILD_PKGS[@]}" || true
+        build_tools_present || die "the build tools are still missing — install them, then run ./install.sh again"
     fi
-    ok "CMake $(cmake --version | awk 'NR==1{print $3}') · Qt $("$q" -query QT_VERSION) · libarchive"
-    local t absent=()
-    for t in strace unsquashfs; do command -v "$t" >/dev/null 2>&1 || absent+=("$t"); done
-    if [ ${#absent[@]} -gt 0 ]; then
-        warn "$(IFS=,; printf '%s' "${absent[*]}" | sed 's/,/, /g') not found — inspection works, tracing in the sandbox needs them"
-        info "strace and squashfs-tools from your distribution"
+    local qt
+    qt="$("$QMAKE" -query QT_VERSION)"
+    if [ "$(printf '%s\n6.4\n' "$qt" | sort -V | head -n1)" != 6.4 ]; then
+        die "Qt $qt is too old: PkgScope needs Qt 6.4 or newer (Debian 12, Ubuntu 24.04, Fedora 38 and later). Use the AppImage from the releases page on this system."
     fi
+    local cm
+    read -r _ _ cm _ < <(cmake --version)
+    ok "CMake $cm · Qt $qt · libarchive"
+    local absent
+    absent="$(missing_runtime)"
+    if [ -n "$absent" ]; then
+        get_packages "missing ${absent// /, } — needed to trace and to unpack AppImages and Snaps" "${RUNTIME_PKGS[@]}" || true
+        absent="$(missing_runtime)"
+    fi
+    if [ -z "$absent" ]; then ok "strace · unsquashfs"; else warn "without ${absent// /, } PkgScope still inspects packages, but cannot trace or unpack AppImages"; fi
 }
 
-NEEDS_SETUP=0
+userns_restricted() { [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ]; }
+overlay_missing() { [ ! -d /sys/module/overlay ] && ! grep -qs overlay /proc/filesystems; }
+
+# NEEDS_SETUP=1 when tracing needs the one-time setup; HELPER_STALE=1 when it was done but the
+# root-owned helper copy is older than the one just installed.
+NEEDS_SETUP=0 HELPER_STALE=0
 check_sandbox() {
-    NEEDS_SETUP=0
-    if [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ] &&
-        ! grep -qs "$HELPER" "$APPARMOR_PROFILE"; then
-        NEEDS_SETUP=1
+    NEEDS_SETUP=0 HELPER_STALE=0
+    if userns_restricted; then
+        if [ ! -f "$APPARMOR_PROFILE" ] || [ ! -x "$SYS_HELPER" ]; then NEEDS_SETUP=1
+        elif [ -x "$HELPER" ] && ! cmp -s "$HELPER" "$SYS_HELPER"; then HELPER_STALE=1
+        fi
     fi
-    if [ ! -d /sys/module/overlay ] && ! grep -qs overlay /proc/filesystems; then NEEDS_SETUP=1; fi
+    overlay_missing && NEEDS_SETUP=1
+    return 0
 }
 
 # ---- install --------------------------------------------------------------------------------
@@ -350,15 +436,25 @@ install_files() {
 
 setup_sandbox() {
     step "Sandbox setup"
-    if [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ]; then
-        info "this system restricts user namespaces; an AppArmor profile allows them for the helper only"
-        sed "s|^profile pkgscope-sandbox .* flags=|profile pkgscope-sandbox $HELPER flags=|" \
-            "$SRC_DIR/packaging/apparmor/pkgscope-sandbox" | sudo tee "$APPARMOR_PROFILE" >/dev/null &&
-            sudo apparmor_parser -r "$APPARMOR_PROFILE" && ok "AppArmor profile for $(tilde "$HELPER")" ||
-            warn "the AppArmor profile was not installed"
+    if userns_restricted; then
+        info "this system restricts user namespaces; AppArmor allows them for a root-owned copy of the helper"
+        if { [ "$HELPER" -ef "$SYS_HELPER" ] || as_root install -D -o root -g root -m 755 "$HELPER" "$SYS_HELPER"; } &&
+            as_root install -D -o root -g root -m 644 "$SRC_DIR/packaging/apparmor/pkgscope-sandbox-local" "$APPARMOR_PROFILE" &&
+            as_root apparmor_parser -r "$APPARMOR_PROFILE"; then
+            ok "sandbox helper → $SYS_HELPER"
+            ok "AppArmor profile → $APPARMOR_PROFILE"
+        else
+            warn "the AppArmor setup failed — tracing will not work on this system"
+        fi
+        if grep -Fqs "$PREFIX" "$OLD_PROFILE"; then
+            as_root apparmor_parser -R "$OLD_PROFILE" 2>/dev/null || true
+            as_root rm -f "$OLD_PROFILE" && ok "removed the old profile $OLD_PROFILE"
+        fi
     fi
-    if [ ! -d /sys/module/overlay ] && ! grep -qs overlay /proc/filesystems; then
-        sudo modprobe overlay && ok "overlay module loaded" || warn "could not load the overlay module"
+    if overlay_missing; then
+        as_root install -D -m 644 "$SRC_DIR/packaging/modules-load.d/pkgscope.conf" "$MODULES_CONF" &&
+            ok "overlay module loads at boot ($MODULES_CONF)"
+        as_root modprobe overlay && ok "overlay module loaded" || warn "could not load the overlay module"
     fi
 }
 
@@ -371,8 +467,8 @@ summary() {
     printf '    %-14s %s FILE\n' "Inspect" "$c"
     printf '    %-14s %s --trace FILE\n' "Trace" "$c"
     printf '    %-14s ./install.sh --uninstall\n' "Uninstall"
-    if [ "$SETUP" != yes ] && [ "$NEEDS_SETUP" = 1 ]; then
-        printf '\n    %sTracing may need a one-time setup on this system:%s ./install.sh --setup\n' "$YEL" "$R"
+    if [ "$NEEDS_SETUP" = 1 ] || [ "$HELPER_STALE" = 1 ]; then
+        printf '\n    %sTracing needs a one-time setup on this system:%s ./install.sh --setup\n' "$YEL" "$R"
     fi
     if [ "$on_path" = 0 ]; then
         printf '\n    %s%s is not on your PATH.%s Add it in your shell profile, e.g.\n' "$YEL" "$(tilde "$BIN_DIR")" "$R"
@@ -420,9 +516,13 @@ fi
 
 build
 install_files
-if [ "$SETUP" = yes ] && [ "$NEEDS_SETUP" = 1 ]; then
+check_sandbox
+if [ "$SETUP" = yes ] && { [ "$NEEDS_SETUP" = 1 ] || [ "$HELPER_STALE" = 1 ]; }; then
+    setup_sandbox
+elif [ "$HELPER_STALE" = 1 ] && ask_yn "Update the sandbox helper in ${SYS_HELPER%/*} (asks for your password)?" y; then
     setup_sandbox
 elif [ "$SETUP" = yes ]; then
     ok "sandbox: nothing to set up on this system"
 fi
+check_sandbox
 summary

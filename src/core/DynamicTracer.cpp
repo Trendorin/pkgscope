@@ -22,7 +22,6 @@
 #include <sys/stat.h>
 #include <climits>
 #include <unistd.h>
-#include <unistd.h>
 
 namespace ps {
 
@@ -32,6 +31,9 @@ const QStringList kOverlayTops = {QStringLiteral("usr"), QStringLiteral("etc"), 
                                   QStringLiteral("bin"), QStringLiteral("sbin"), QStringLiteral("lib"), QStringLiteral("lib32"),
                                   QStringLiteral("lib64"), QStringLiteral("libx32"), QStringLiteral("home"), QStringLiteral("root"),
                                   QStringLiteral("tmp")};
+
+// Root-owned copy of the helper that the AppArmor profile of source and AppImage installs names.
+constexpr char kSystemHelper[] = "/usr/local/libexec/pkgscope/pkgscope-sandbox";
 
 const char *kTraceSet =
     "?open,openat,?openat2,?creat,?mkdir,mkdirat,?unlink,unlinkat,?rmdir,?rename,renameat,?renameat2,?link,linkat,"
@@ -109,8 +111,23 @@ DynamicTracer::Environment DynamicTracer::probe(const Settings &s)
             env.notes << QStringLiteral("overlayfs is not loaded, so system directories can only be mounted read-only and installers cannot write there. "
                                         "Load it with: sudo modprobe overlay (the PkgScope packages load it at boot).");
     }
-    if (sysctl("/proc/sys/kernel/apparmor_restrict_unprivileged_userns") == 1)
-        env.notes << QStringLiteral("AppArmor restricts unprivileged user namespaces. If tracing fails, install the bundled AppArmor profile for pkgscope-sandbox.");
+    if (sysctl("/proc/sys/kernel/apparmor_restrict_unprivileged_userns") == 1) {
+        // AppArmor lets only a profiled helper create user namespaces. The profile must name a
+        // root-owned file: one under ~/.local (source install) or inside an AppImage could be
+        // swapped by any program of the user. "install.sh --setup" and "PkgScope.AppImage
+        // --setup-sandbox" put such a copy here; packages install theirs under /usr already.
+        const QString system = QString::fromLatin1(kSystemHelper);
+        struct stat st{};
+        if (!env.helper.startsWith(QLatin1String("/usr/")) && ::stat(kSystemHelper, &st) == 0 && st.st_uid == 0 &&
+            ::access(kSystemHelper, X_OK) == 0)
+            env.helper = system;
+        if (!env.helper.startsWith(QLatin1String("/usr/")))
+            env.notes << (qEnvironmentVariableIsSet("APPIMAGE")
+                              ? QStringLiteral("AppArmor restricts unprivileged user namespaces. To trace from the AppImage, run it once with "
+                                               "--setup-sandbox (asks for your password), or install the distribution package.")
+                              : QStringLiteral("AppArmor restricts unprivileged user namespaces. Run ./install.sh --setup once "
+                                               "(asks for your password), or install the distribution package."));
+    }
     return env;
 }
 
@@ -334,7 +351,9 @@ bool DynamicTracer::runStage(const TraceStage &stage, int index, Workspace &ws, 
     if (!helperError.isEmpty()) {
         out.sandboxNotes += QStringLiteral("Sandbox setup failed: %1\n").arg(helperError);
         if (helperError.contains(QLatin1String("unshare")) || helperError.contains(QLatin1String("uid_map")) || helperError.contains(QLatin1String("mount")))
-            out.sandboxNotes += QStringLiteral("Your system blocks unprivileged user namespaces for this program. On Ubuntu 24.04+ install the AppArmor profile shipped with PkgScope (see README).\n");
+            out.sandboxNotes += QStringLiteral("Your system blocks unprivileged user namespaces for this program. On Ubuntu 24.04+ the helper "
+                                               "needs its AppArmor profile: install the package, run ./install.sh --setup, or start the "
+                                               "AppImage once with --setup-sandbox.\n");
         return false;
     }
     if (!po.markerSeen) {

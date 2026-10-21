@@ -133,7 +133,8 @@ ContentScanner::ContentScanner()
         true, false, true);
 
     // Privilege / persistence
-    add("persist.ld-preload-file", S::Critical, "Rootkit", "References /etc/ld.so.preload",
+    // Titles name the file without its full path: PkgScope's own binaries must not match their rules.
+    add("persist.ld-preload-file", S::Critical, "Rootkit", "References the global preload list (ld.so.preload in /etc)",
         "Libraries listed there are injected into every process – a classic userland rootkit technique.",
         QStringLiteral(R"(/etc/ld\.so\.preload)"), false, false, true);
     add("priv.ld-preload", S::Medium, "Rootkit", "Sets LD_PRELOAD",
@@ -305,7 +306,7 @@ void ContentScanner::scanText(const QByteArray &data, const QString &location, C
             if (!m.hasMatch()) continue;
             if (r.id == QLatin1String("obf.base64-blob")) {
                 static const QRegularExpression nonHex(QStringLiteral("[g-zG-Z+/]"));
-                if (!nonHex.matchView(m.capturedView(0)).hasMatch()) continue; // long hex (e.g. DH moduli) is not base64
+                if (!nonHex.match(m.captured(0)).hasMatch()) continue; // long hex (e.g. DH moduli) is not base64
             }
             lineFlagged = true;
             int &count = perRule[r.id];
@@ -408,7 +409,7 @@ const QVector<ContentScanner::PathRule> &ContentScanner::persistencePathRules()
 {
     using S = Severity;
     static const QVector<PathRule> rules = {
-        {QStringLiteral("path.ld-preload"), S::Critical, QStringLiteral("Rootkit"), QStringLiteral("Writes /etc/ld.so.preload (global library injection)"), rx(QStringLiteral(R"(^/etc/ld\.so\.preload$)"))},
+        {QStringLiteral("path.ld-preload"), S::Critical, QStringLiteral("Rootkit"), QStringLiteral("Writes ld.so.preload in /etc (global library injection)"), rx(QStringLiteral(R"(^/etc/ld\.so\.preload$)"))},
         {QStringLiteral("path.sudoers"), S::High, QStringLiteral("Privilege"), QStringLiteral("Installs sudo rules"), rx(QStringLiteral(R"(^/etc/sudoers(\.d/.*)?$)"))},
         {QStringLiteral("path.pam-module"), S::High, QStringLiteral("Credential access"), QStringLiteral("Installs a PAM authentication module"), rx(QStringLiteral(R"(/security/pam_[^/]+\.so$)"))},
         {QStringLiteral("path.pam"), S::Medium, QStringLiteral("Credential access"), QStringLiteral("Installs PAM configuration"), rx(QStringLiteral(R"(^/etc/pam\.d/)"))},

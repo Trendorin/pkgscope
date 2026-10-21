@@ -56,12 +56,14 @@ chmod +x PkgScope-1.1.1-x86_64.AppImage && ./PkgScope-1.1.1-x86_64.AppImage
 
 Every package is built in a clean container of its distribution, then installed and started
 there before it is published. Check the files with `sha256sum --ignore-missing -c SHA256SUMS`.
-`./PkgScope-*.AppImage --cli FILE` runs the command line. Tracing needs `strace` and
-`squashfs-tools`; the packages pull them in.
+`./PkgScope-*.AppImage --cli FILE` runs the command line. Nothing else to install: the packages
+pull in `strace` and `squashfs-tools`, the AppImage carries its own. On Ubuntu 24.04+ run the
+AppImage once with `--setup-sandbox` to allow tracing (it asks for your password).
 
 ### From source
 
-You need CMake 3.19+, a C++20 compiler, Qt 6 and libarchive development files.
+`install.sh` checks for CMake, a C++20 compiler, Qt 6.4+ and libarchive, and offers to install
+whatever is missing with pacman, apt, dnf or zypper.
 
 ```sh
 git clone https://github.com/Trendorin/pkgscope && cd pkgscope
@@ -69,7 +71,8 @@ git clone https://github.com/Trendorin/pkgscope && cd pkgscope
 ./install.sh --uninstall     # removes exactly what it installed
 ```
 
-`./install.sh --help` lists the options (`--yes`, `--prefix`, `--no-gui`, `--setup`).
+`./install.sh --help` lists the options (`--yes`, `--prefix`, `--no-gui`, `--setup`,
+`--no-packages`).
 
 ## Getting started
 

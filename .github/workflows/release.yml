@@ -169,6 +169,17 @@ jobs:
           "$img" --appimage-extract >/dev/null
           test -f squashfs-root/usr/plugins/wayland-shell-integration/libxdg-shell.so
           test -f squashfs-root/usr/plugins/platforms/libqwayland-generic.so
+          test -z "$(find squashfs-root -type f -perm /022)"
+          # The bundled helpers work without strace or squashfs-tools on the host.
+          sudo apt-get remove -yq strace squashfs-tools || true
+          squashfs-root/usr/bin/strace -V
+          squashfs-root/usr/bin/unsquashfs -v | sed -n 1p
+          "$img" --appimage-extract-and-run --cli "$img" | tee inspect.txt
+          awk '/entries:/ { n = $2 + 0 } END { exit !(n > 50) }' inspect.txt
+          grep -q 'No major concerns' inspect.txt   # PkgScope must not flag itself
+          printf '#!/bin/sh\necho hi > /etc/pkgscope-ci-test\n' > trace-me.sh
+          "$img" --appimage-extract-and-run --cli --trace --timeout 30 trace-me.sh | tee trace.txt
+          grep -q 'runtime: 1 processes, 1 fs changes' trace.txt
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

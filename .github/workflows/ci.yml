@@ -23,7 +23,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends build-essential cmake ninja-build \
-            qt6-base-dev libarchive-dev appstream desktop-file-utils
+            qt6-base-dev libarchive-dev appstream desktop-file-utils apparmor
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -39,6 +39,9 @@ jobs:
         run: |
           desktop-file-validate packaging/io.github.trendorin.PkgScope.desktop
           appstreamcli validate --no-net packaging/io.github.trendorin.PkgScope.metainfo.xml
+
+      - name: AppArmor profiles parse
+        run: for p in packaging/apparmor/*; do apparmor_parser --skip-kernel-load --skip-cache "$p"; done
 
       - name: Scripts parse
         run: for f in install.sh packaging/*/build.sh .github/release-notes.sh; do bash -n "$f"; done
@@ -65,3 +68,36 @@ jobs:
           mkdir corpus
           cp /usr/bin/ls /usr/lib/x86_64-linux-gnu/libz.so.1 install.sh corpus/
           ASAN_OPTIONS=detect_leaks=0 fuzz/pkgscope-fuzz -max_total_time=120 -max_len=65536 corpus
+
+  installer:
+    name: install.sh on ${{ matrix.image }}
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [archlinux:latest, debian:trixie, debian:bookworm, ubuntu:24.04, fedora:44, opensuse/tumbleweed]
+    steps:
+      - name: What the checkout step needs
+        run: if command -v zypper >/dev/null; then zypper -n install tar gzip findutils; fi
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # A fresh system: install.sh itself has to bring in every package it needs.
+      - name: Install from a bare image
+        run: |
+          if command -v pacman >/dev/null; then pacman -Syu --noconfirm; fi
+          ./install.sh --yes --prefix /opt/pkgscope
+
+      - name: Run
+        run: |
+          /opt/pkgscope/bin/pkgscope-cli --version
+          QT_QPA_PLATFORM=offscreen /opt/pkgscope/bin/pkgscope --version
+          command -v strace && command -v unsquashfs
+          /opt/pkgscope/bin/pkgscope-cli install.sh
+
+      - name: Uninstall leaves no files
+        run: |
+          ./install.sh --uninstall --yes --prefix /opt/pkgscope
+          # Menu and icon caches are shared with other programs and only refreshed.
+          test -z "$(find /opt/pkgscope -type f ! -name mimeinfo.cache ! -name icon-theme.cache)"

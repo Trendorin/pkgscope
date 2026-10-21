@@ -1,0 +1,14 @@
+# AppArmor profile for the root-owned copy of pkgscope-sandbox that "install.sh --setup" and
+# "PkgScope-*.AppImage --setup-sandbox" place in /usr/local/libexec/pkgscope on distributions that
+# restrict unprivileged user namespaces (Ubuntu 24.04+).
+#
+# It names that one root-owned file on purpose: a profile for a helper under ~/.local or inside an
+# AppImage mount would hand user namespaces to whatever program of the user replaced that file.
+# The distribution packages ship their own profile (pkgscope-sandbox) for /usr.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile pkgscope-sandbox-local /usr/local/libexec/pkgscope/pkgscope-sandbox flags=(unconfined) {
+  userns,
+  include if exists <local/pkgscope-sandbox-local>
+}

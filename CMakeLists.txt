@@ -16,9 +16,9 @@ option(PKGSCOPE_BUILD_TESTS "Build the tests (ctest)" OFF)
 option(PKGSCOPE_FUZZ "Build the libFuzzer harness with ASan/UBSan (clang only)" OFF)
 
 if(PKGSCOPE_BUILD_GUI)
-  find_package(Qt6 6.2 REQUIRED COMPONENTS Core Gui Widgets)
+  find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets)
 else()
-  find_package(Qt6 6.2 REQUIRED COMPONENTS Core)
+  find_package(Qt6 6.4 REQUIRED COMPONENTS Core)
 endif()
 find_package(LibArchive REQUIRED)
 qt_standard_project_setup()
@@ -27,6 +27,16 @@ qt_standard_project_setup()
 set(PKGSCOPE_HARDEN
   -Wall -Wextra -Wpedantic -Wno-missing-field-initializers
   -fstack-protector-strong -fPIE)
+include(CheckCXXCompilerFlag)
+foreach(flag -fstack-clash-protection -fcf-protection=full)
+  string(MAKE_C_IDENTIFIER "PKGSCOPE_HAS${flag}" var)
+  check_cxx_compiler_flag(${flag} ${var})
+  if(${var})
+    list(APPEND PKGSCOPE_HARDEN ${flag})
+  endif()
+endforeach()
+# Bounds checks in the standard library: cheap, and the parsers read hostile input.
+list(APPEND PKGSCOPE_HARDEN -D_GLIBCXX_ASSERTIONS)
 # Distribution flags (Fedora, Arch) usually bring their own _FORTIFY_SOURCE.
 if(NOT CMAKE_CXX_FLAGS MATCHES "_FORTIFY_SOURCE")
   list(APPEND PKGSCOPE_HARDEN $<$<NOT:$<CONFIG:Debug>>:-D_FORTIFY_SOURCE=3>)

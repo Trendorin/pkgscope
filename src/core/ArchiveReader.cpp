@@ -25,9 +25,27 @@ struct ArchivePtr {
     ArchivePtr &operator=(const ArchivePtr &) = delete;
 };
 
+// Only decompressors linked into libarchive. archive_read_support_filter_all() would also accept
+// lrzip, lzop and grzip data and decode it by running those programs on the hostile input; the same
+// happens for gzip, bzip2, xz, lz4 or zstd when libarchive was built without that library.
+void supportFilters(archive *a)
+{
+    archive_read_support_filter_compress(a);
+    archive_read_support_filter_uu(a);
+    if (archive_zlib_version()) archive_read_support_filter_gzip(a);
+    if (archive_bzlib_version()) archive_read_support_filter_bzip2(a);
+    if (archive_liblzma_version()) {
+        archive_read_support_filter_xz(a);
+        archive_read_support_filter_lzma(a);
+        archive_read_support_filter_lzip(a);
+    }
+    if (archive_libzstd_version()) archive_read_support_filter_zstd(a);
+    if (archive_liblz4_version()) archive_read_support_filter_lz4(a);
+}
+
 void configure(archive *a, ArchiveKind kind)
 {
-    archive_read_support_filter_all(a);
+    supportFilters(a);
     switch (kind) {
     case ArchiveKind::Tar:
         archive_read_support_format_tar(a);
@@ -361,7 +379,7 @@ QStringList ArchiveReader::listEntries(const QString &path, ArchiveKind kind, in
 QByteArray ArchiveReader::decompressRaw(const QByteArray &data, qint64 maxOut)
 {
     ArchivePtr a(archive_read_new());
-    archive_read_support_filter_all(a.a);
+    supportFilters(a.a);
     archive_read_support_format_raw(a.a);
     if (archive_read_open_memory(a.a, data.constData(), static_cast<size_t>(data.size())) != ARCHIVE_OK) return data;
     archive_entry *e = nullptr;

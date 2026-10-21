@@ -5,6 +5,37 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- The AppImage carries its own `strace` and `unsquashfs` (built from the release tarballs, checked
+  against pinned SHA-256 sums), so tracing and unpacking AppImages and Snaps work without installing
+  anything. `--setup-sandbox` prepares Ubuntu 24.04+ and systems without overlayfs for tracing,
+  `--remove-sandbox` undoes it.
+- `install.sh` offers to install missing build tools, `strace` and `squashfs-tools` with pacman, apt,
+  dnf or zypper (openSUSE is new) instead of stopping with a command to copy. `--no-packages` turns
+  that off. It now says up front when Qt is older than 6.4 and points to the AppImage.
+- CI installs PkgScope with `install.sh` on bare Arch, Debian 12 and 13, Ubuntu 24.04, Fedora 44 and
+  openSUSE Tumbleweed images, runs it and uninstalls it.
+
+### Security
+- Compressed data inside packages is decoded only by the libraries linked into libarchive. Before,
+  lrzip, lzop or grzip data made libarchive run those programs on the untrusted input when they
+  were installed.
+- On Ubuntu 24.04+, `install.sh --setup` gave the AppArmor user-namespace permission to the helper in
+  `~/.local`, which any program of the user could replace. It now installs a root-owned copy in
+  `/usr/local/libexec/pkgscope` with its own profile (`pkgscope-sandbox-local`), removes the old
+  profile, and PkgScope uses that copy whenever AppArmor restricts user namespaces.
+- Package names, versions, file names and traced command lines are no longer read as rich text in
+  the window header, message boxes and tooltips, so a package cannot restyle what the window shows.
+- Builds add `-fstack-clash-protection`, `-fcf-protection` and `_GLIBCXX_ASSERTIONS`.
+
+### Fixed
+- The 1.1.1 AppImage held world-writable copyright files, and PkgScope rated its own binaries
+  Critical because a rule title contained the path it looks for. Inspecting the AppImage with
+  itself now gives "No major concerns"; the release workflow checks both.
+- Builds with Qt 6.4 (Debian 12, Ubuntu 24.04) failed; the minimum Qt is now stated as 6.4.
+- With `overlay` missing, `install.sh --setup` also adds `/etc/modules-load.d/pkgscope.conf`, so the
+  module is there after a reboot too.
+
 ## [1.1.1] — 2026-10-20
 
 ### Fixed
