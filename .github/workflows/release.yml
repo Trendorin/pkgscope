@@ -161,6 +161,7 @@ jobs:
         run: packaging/appimage/build.sh
 
       - name: Run
+        shell: bash   # -eo pipefail: a failing command before | tee fails the step
         run: |
           sudo apt-get install -yq xvfb
           img=$(ls dist/*.AppImage)
@@ -173,7 +174,7 @@ jobs:
           # The bundled helpers work without strace or squashfs-tools on the host.
           sudo apt-get remove -yq strace squashfs-tools || true
           squashfs-root/usr/bin/strace -V
-          squashfs-root/usr/bin/unsquashfs -v | sed -n 1p
+          (squashfs-root/usr/bin/unsquashfs -v 2>&1 || true) | grep 'unsquashfs version'   # -v exits with 1
           "$img" --appimage-extract-and-run --cli "$img" | tee inspect.txt
           awk '/entries:/ { n = $2 + 0 } END { exit !(n > 50) }' inspect.txt
           grep -q 'No major concerns' inspect.txt   # PkgScope must not flag itself

@@ -82,7 +82,10 @@ build_helpers() {
         GZIP_SUPPORT=1 XZ_SUPPORT=1 LZO_SUPPORT=1 LZ4_SUPPORT=1 ZSTD_SUPPORT=1 >/dev/null
     install -m755 "$src/squashfs-tools/unsquashfs" "$out/unsquashfs"
     "$out/strace" -V | sed -n 1p
-    "$out/unsquashfs" -v 2>&1 | sed -n 1p
+    local v
+    v=$("$out/unsquashfs" -v 2>&1 || true)   # -v prints the version, then exits with 1
+    [[ $v == "unsquashfs version $SQUASHFS_VERSION"* ]] || { echo "unsquashfs does not run: $v" >&2; exit 1; }
+    echo "${v%%$'\n'*}"
 }
 
 mkdir -p "$WORK/tools" "$ROOT/dist"
