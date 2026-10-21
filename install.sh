@@ -191,7 +191,7 @@ cmake_progress() {
     grep -oE '^\[ *[0-9]+(/[0-9]+|%)\]' "$1" | tail -1 | tr -d '[] '
 }
 
-# Distribution family for package hints: arch, debian, fedora or other.
+# Distribution family for package hints: arch, debian, fedora, suse or other.
 distro() {
     local id like
     id="$(. /etc/os-release 2>/dev/null && printf '%s' "${ID:-}")"
